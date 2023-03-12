@@ -38,11 +38,11 @@ type Camera =
   , zoom :: Number
   }
 
-z' :: forall a3. Semiring a3 => a3 -> a3 -> a3
-z' z c = (z * z) + c
-
 max_iters :: Int
 max_iters = 50
+
+z' :: forall a3. Semiring a3 => a3 -> a3 -> a3
+z' z c = (z * z) + c
 
 fractal :: Cartesian Number -> Cartesian Number -> Int -> Tuple (Boolean) Iterations
 fractal c z iter
@@ -89,14 +89,6 @@ renderMandelbrot canvas camera = do
           }
 
       setFillStyle ctx $ "#" <> num
-      -- if fst res == true
-      --   then do
-
-      --     -- log $ (toStringAs hexadecimal $ Int.floor iter)
-      --     setFillStyle ctx $ "#" <> num 
-      --   else do
-      --     setFillStyle ctx "#000"
-
       fillRect ctx r
 
 main :: Effect Unit
@@ -110,15 +102,15 @@ main = void $ unsafePartial do
     , zoom: 1.0
     }
 
-  listener <- eventListener $ logClick camera $ renderMandelbrot canvas camera
-  scrollListener <- eventListener $ scrollListen camera $ renderMandelbrot canvas camera
-  addEventListener (EventType "click") listener true (toEventTarget node)
+  clickListener <- eventListener $ handleClick camera $ renderMandelbrot canvas camera
+  scrollListener <- eventListener $ handleScroll camera $ renderMandelbrot canvas camera
+  addEventListener (EventType "click") clickListener true (toEventTarget node)
   addEventListener (EventType "wheel") scrollListener true (toEventTarget node)
 
   renderMandelbrot canvas camera
 
-logClick :: Ref Camera -> Effect Unit -> Event -> Effect Unit
-logClick camera renderCanvas e = do
+handleClick :: Ref Camera -> Effect Unit -> Event -> Effect Unit
+handleClick camera renderCanvas e = do
   for_ (MouseEvent.fromEvent e) \me -> do
     let canvas = fromEventTarget =<< Event.target e
 
@@ -131,14 +123,14 @@ logClick camera renderCanvas e = do
       let newX = (Int.toNumber x - (boundingRect.width / 2.0)) / (boundingRect.width / 2.0)
       let newY = (Int.toNumber y - (boundingRect.height / 2.0)) / (boundingRect.height / 2.0)
 
-      Ref.modify_  (\c -> c { center = {x: newX, y: newY}})  camera
+      Ref.modify_ (\c -> c { center = { x: newX, y: newY } }) camera
       renderCanvas
 
-scrollListen :: Ref Camera -> Effect Unit -> Event -> Effect Unit
-scrollListen camera renderCanvas e = do
+handleScroll :: Ref Camera -> Effect Unit -> Event -> Effect Unit
+handleScroll camera renderCanvas e = do
   for_ (WheelEvent.fromEvent e) \scrollEvent -> do
     let scrollY = WheelEvent.deltaY scrollEvent
-    let newScroll = scrollY/(-100.0)
+    let newScroll = scrollY / (-100.0)
 
-    Ref.modify_  (\c -> c { zoom = c.zoom + newScroll })  camera
+    Ref.modify_ (\c -> c { zoom = c.zoom + newScroll }) camera
     renderCanvas
